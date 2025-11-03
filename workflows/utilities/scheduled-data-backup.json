@@ -1,0 +1,88 @@
+{
+  "name": "Scheduled Data Backup",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Daily Schedule",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Generate backup filename with timestamp\nconst now = new Date();\nconst timestamp = now.toISOString().split('T')[0];\n\nreturn [{\n  json: {\n    backupName: `backup-${timestamp}.json`,\n    timestamp: now.toISOString(),\n    status: 'initiated'\n  }\n}];"
+      },
+      "name": "Prepare Backup",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "path": "/backups/{{$json.backupName}}",
+        "options": {}
+      },
+      "name": "Save to Storage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Log backup completion\nconst data = $input.first().json;\n\nreturn [{\n  json: {\n    message: 'Backup completed successfully',\n    filename: data.backupName,\n    completedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "name": "Log Result",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Daily Schedule": {
+      "main": [
+        [
+          {
+            "node": "Prepare Backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Backup": {
+      "main": [
+        [
+          {
+            "node": "Save to Storage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Storage": {
+      "main": [
+        [
+          {
+            "node": "Log Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "4"
+}
