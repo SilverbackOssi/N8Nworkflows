@@ -28,13 +28,17 @@
     },
     {
       "parameters": {
-        "operation": "create",
-        "path": "/backups/{{$json.backupName}}",
-        "options": {}
+        "method": "POST",
+        "url": "https://your-storage-endpoint.com/api/backups",
+        "authentication": "none",
+        "options": {
+          "bodyContentType": "json"
+        },
+        "bodyParametersJson": "={{ JSON.stringify($json) }}"
       },
       "name": "Save to Storage",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 1,
+      "typeVersion": 3,
       "position": [650, 300]
     },
     {
