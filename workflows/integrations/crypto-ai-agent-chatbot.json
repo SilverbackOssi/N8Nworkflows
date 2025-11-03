@@ -1,0 +1,167 @@
+{
+  "name": "Crypto AI Agent Chatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "crypto-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Chat Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "crypto-chat-webhook"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Extract user message and context\nconst data = $input.first().json;\nconst userMessage = data.message || data.text || '';\nconst userId = data.userId || data.user_id || 'anonymous';\nconst platform = data.platform || 'web';\n\n// Build context for the AI agent\nconst context = {\n  companyName: 'CryptoVision',\n  industry: 'Cryptocurrency & Blockchain',\n  role: 'Customer Support AI Agent',\n  capabilities: [\n    'Answer questions about cryptocurrency trading',\n    'Explain blockchain technology',\n    'Provide market insights',\n    'Help with account issues',\n    'Educate about crypto security'\n  ]\n};\n\nreturn [{\n  json: {\n    userMessage: userMessage,\n    userId: userId,\n    platform: platform,\n    context: context,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "name": "Process Input",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4",
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 500
+        },
+        "messages": {
+          "messageType": "defineBelow",
+          "values": [
+            {
+              "role": "system",
+              "content": "= 'You are a helpful AI assistant for ' + $json.context.companyName + ', a ' + $json.context.industry + ' company. Your role is ' + $json.context.role + '. Be professional, knowledgeable, and helpful. Provide accurate information about cryptocurrency, blockchain technology, and trading. Always prioritize user safety and security. If you don\\'t know something, admit it rather than guessing. Keep responses concise and actionable.'"
+            },
+            {
+              "role": "user",
+              "content": "= $json.userMessage"
+            }
+          ]
+        }
+      },
+      "name": "AI Agent (OpenAI)",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "1",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Format the AI response\nconst aiResponse = $input.first().json;\nconst originalData = $node['Process Input'].json;\n\n// Extract the AI message\nconst message = aiResponse.choices?.[0]?.message?.content || aiResponse.text || 'I apologize, but I couldn\\'t generate a response. Please try again.';\n\nreturn [{\n  json: {\n    success: true,\n    response: message,\n    userId: originalData.userId,\n    platform: originalData.platform,\n    timestamp: new Date().toISOString(),\n    metadata: {\n      model: 'gpt-4',\n      tokensUsed: aiResponse.usage?.total_tokens || 0,\n      conversationId: originalData.userId + '-' + Date.now()\n    }\n  }\n}];"
+      },
+      "name": "Format Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "= $json"
+      },
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Log conversation for analytics\nconst data = $input.first().json;\n\nreturn [{\n  json: {\n    event: 'chat_interaction',\n    userId: data.userId,\n    platform: data.platform,\n    timestamp: data.timestamp,\n    tokensUsed: data.metadata.tokensUsed,\n    conversationId: data.metadata.conversationId\n  }\n}];"
+      },
+      "name": "Log Analytics",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://your-analytics-endpoint.com/api/events",
+        "authentication": "none",
+        "options": {
+          "bodyContentType": "json"
+        },
+        "bodyParametersJson": "= JSON.stringify($json)"
+      },
+      "name": "Send Analytics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 500]
+    }
+  ],
+  "connections": {
+    "Chat Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Input": {
+      "main": [
+        [
+          {
+            "node": "AI Agent (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Analytics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Analytics": {
+      "main": [
+        [
+          {
+            "node": "Send Analytics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "5"
+}
