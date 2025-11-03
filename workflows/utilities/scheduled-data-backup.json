@@ -3,14 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "0 0 * * *"
-            }
-          ]
-        }
+        "cronExpression": "0 0 * * *"
       },
       "name": "Daily Schedule",
       "type": "n8n-nodes-base.cron",

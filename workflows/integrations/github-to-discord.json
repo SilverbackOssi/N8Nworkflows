@@ -25,7 +25,7 @@
     },
     {
       "parameters": {
-        "content": "={{$json.content}}\\n{{$json.url}}",
+        "content": "={{$json.content + '\\n' + $json.url}}",
         "webhookUrl": "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN"
       },
       "name": "Send to Discord",
