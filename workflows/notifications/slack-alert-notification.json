@@ -23,7 +23,7 @@
     {
       "parameters": {
         "channel": "#alerts",
-        "text": "={{$json.message}}\n\nDetails: {{$json.details}}\nTime: {{$json.timestamp}}",
+        "text": "={{$json.message + '\\n\\nDetails: ' + $json.details + '\\nTime: ' + $json.timestamp}}",
         "otherOptions": {}
       },
       "name": "Send to Slack",
