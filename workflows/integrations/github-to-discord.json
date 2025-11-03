@@ -25,8 +25,8 @@
     },
     {
       "parameters": {
-        "content": "={{$json.content + '\\n' + $json.url}}",
-        "webhookUrl": "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN"
+        "content": "= $json.content + '\\n' + $json.url",
+        "webhookUrl": "https://discord.com/api/webhooks/{WEBHOOK_ID}/{WEBHOOK_TOKEN}"
       },
       "name": "Send to Discord",
       "type": "n8n-nodes-base.discord",
