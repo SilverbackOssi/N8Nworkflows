@@ -15,6 +15,8 @@ This repository contains ready-to-use N8N workflow templates that you can import
 
 ## 🚀 Getting Started
 
+**New to N8N?** Check out our [Quick Start Guide](QUICKSTART.md) for a complete introduction!
+
 ### Prerequisites
 
 - An N8N instance (self-hosted or cloud)
@@ -28,6 +30,8 @@ This repository contains ready-to-use N8N workflow templates that you can import
 4. Select the workflow JSON file from this repository
 5. Configure any required credentials and settings
 6. Activate the workflow
+
+For detailed instructions, see [QUICKSTART.md](QUICKSTART.md).
 
 ## 📚 Workflow Structure
 
