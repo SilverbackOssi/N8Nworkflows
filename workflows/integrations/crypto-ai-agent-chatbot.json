@@ -16,12 +16,56 @@
     },
     {
       "parameters": {
-        "functionCode": "// Extract user message and context\nconst data = $input.first().json;\nconst userMessage = data.message || data.text || '';\nconst userId = data.userId || data.user_id || 'anonymous';\nconst platform = data.platform || 'web';\n\n// Build context for the AI agent\nconst context = {\n  companyName: 'CryptoVision',\n  industry: 'Cryptocurrency & Blockchain',\n  role: 'Customer Support AI Agent',\n  capabilities: [\n    'Answer questions about cryptocurrency trading',\n    'Explain blockchain technology',\n    'Provide market insights',\n    'Help with account issues',\n    'Educate about crypto security'\n  ]\n};\n\nreturn [{\n  json: {\n    userMessage: userMessage,\n    userId: userId,\n    platform: platform,\n    context: context,\n    timestamp: new Date().toISOString()\n  }\n}];"
+        "functionCode": "// Extract user message and context\nconst data = $input.first().json;\nconst userMessage = data.message || data.text || '';\nconst userId = data.userId || data.user_id || 'anonymous';\nconst platform = data.platform || 'web';\n\nreturn [{\n  json: {\n    userMessage: userMessage,\n    userId: userId,\n    platform: platform,\n    timestamp: new Date().toISOString()\n  }\n}];"
       },
       "name": "Process Input",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
       "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://your-company-website.com/api/company-info",
+        "authentication": "none",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "name": "Fetch Company Info (Website)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 150],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "data",
+        "options": {
+          "encoding": "utf8"
+        },
+        "filePath": "/data/company-info.json"
+      },
+      "name": "Read Company Info (File)",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [450, 450],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "functionCode": "// Merge company info from file/website with user message\nconst userInput = $input.item(0).json;\nlet companyInfo = {};\n\n// Try to get company info from website (index 1)\nif ($input.item(1)?.json) {\n  companyInfo = $input.item(1).json;\n}\n// If website failed, try file source (index 2)\nelse if ($input.item(2)?.binary?.data) {\n  try {\n    const fileData = Buffer.from($input.item(2).binary.data, 'base64').toString('utf8');\n    companyInfo = JSON.parse(fileData);\n  } catch (e) {\n    // Use default if parsing fails\n  }\n}\n\n// Build context with fetched or default company info\nconst context = {\n  companyName: companyInfo.companyName || 'CryptoVision',\n  industry: companyInfo.industry || 'Cryptocurrency & Blockchain',\n  role: 'Customer Support AI Agent',\n  description: companyInfo.description || 'A leading cryptocurrency platform',\n  products: companyInfo.products || ['Crypto Trading', 'Wallet Services', 'Market Analysis'],\n  features: companyInfo.features || ['Secure Trading', '24/7 Support', 'Low Fees'],\n  capabilities: companyInfo.capabilities || [\n    'Answer questions about cryptocurrency trading',\n    'Explain blockchain technology',\n    'Provide market insights',\n    'Help with account issues',\n    'Educate about crypto security'\n  ],\n  website: companyInfo.website || 'https://example.com',\n  support_email: companyInfo.support_email || 'support@example.com'\n};\n\nreturn [{\n  json: {\n    userMessage: userInput.userMessage,\n    userId: userInput.userId,\n    platform: userInput.platform,\n    context: context,\n    timestamp: userInput.timestamp\n  }\n}];"
+      },
+      "name": "Merge Company Context",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300]
     },
     {
       "parameters": {
@@ -35,7 +79,7 @@
           "values": [
             {
               "role": "system",
-              "content": "= 'You are a helpful AI assistant for ' + $json.context.companyName + ', a ' + $json.context.industry + ' company. Your role is ' + $json.context.role + '. Be professional, knowledgeable, and helpful. Provide accurate information about cryptocurrency, blockchain technology, and trading. Always prioritize user safety and security. If you don\\'t know something, admit it rather than guessing. Keep responses concise and actionable.'"
+              "content": "= 'You are a helpful AI assistant for ' + $json.context.companyName + ', a ' + $json.context.industry + ' company. ' + $json.context.description + '.\\n\\nProducts/Services: ' + $json.context.products.join(', ') + '\\nKey Features: ' + $json.context.features.join(', ') + '\\n\\nYour role is ' + $json.context.role + '. Be professional, knowledgeable, and helpful. Provide accurate information about cryptocurrency, blockchain technology, and trading. Always prioritize user safety and security. If you don\\'t know something, admit it rather than guessing. Keep responses concise and actionable.\\n\\nFor support inquiries, direct users to: ' + $json.context.support_email + '\\nWebsite: ' + $json.context.website"
             },
             {
               "role": "user",
@@ -47,7 +91,7 @@
       "name": "AI Agent (OpenAI)",
       "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
-      "position": [650, 300],
+      "position": [850, 300],
       "credentials": {
         "openAiApi": {
           "id": "1",
@@ -57,12 +101,12 @@
     },
     {
       "parameters": {
-        "functionCode": "// Format the AI response\nconst aiResponse = $input.first().json;\nconst originalData = $node['Process Input'].json;\n\n// Extract the AI message\nconst message = aiResponse.choices?.[0]?.message?.content || aiResponse.text || 'I apologize, but I couldn\\'t generate a response. Please try again.';\n\nreturn [{\n  json: {\n    success: true,\n    response: message,\n    userId: originalData.userId,\n    platform: originalData.platform,\n    timestamp: new Date().toISOString(),\n    metadata: {\n      model: 'gpt-4',\n      tokensUsed: aiResponse.usage?.total_tokens || 0,\n      conversationId: originalData.userId + '-' + Date.now()\n    }\n  }\n}];"
+        "functionCode": "// Format the AI response\nconst aiResponse = $input.first().json;\nconst originalData = $node['Merge Company Context'].json;\n\n// Extract the AI message\nconst message = aiResponse.choices?.[0]?.message?.content || aiResponse.text || 'I apologize, but I couldn\\'t generate a response. Please try again.';\n\nreturn [{\n  json: {\n    success: true,\n    response: message,\n    userId: originalData.userId,\n    platform: originalData.platform,\n    timestamp: new Date().toISOString(),\n    metadata: {\n      model: 'gpt-4',\n      tokensUsed: aiResponse.usage?.total_tokens || 0,\n      conversationId: originalData.userId + '-' + Date.now(),\n      companyContext: originalData.context.companyName\n    }\n  }\n}];"
       },
       "name": "Format Response",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
-      "position": [850, 300]
+      "position": [1050, 300]
     },
     {
       "parameters": {
@@ -72,16 +116,16 @@
       "name": "Send Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1050, 300]
+      "position": [1250, 300]
     },
     {
       "parameters": {
-        "functionCode": "// Log conversation for analytics\nconst data = $input.first().json;\n\nreturn [{\n  json: {\n    event: 'chat_interaction',\n    userId: data.userId,\n    platform: data.platform,\n    timestamp: data.timestamp,\n    tokensUsed: data.metadata.tokensUsed,\n    conversationId: data.metadata.conversationId\n  }\n}];"
+        "functionCode": "// Log conversation for analytics\nconst data = $input.first().json;\n\nreturn [{\n  json: {\n    event: 'chat_interaction',\n    userId: data.userId,\n    platform: data.platform,\n    timestamp: data.timestamp,\n    tokensUsed: data.metadata.tokensUsed,\n    conversationId: data.metadata.conversationId,\n    companyContext: data.metadata.companyContext\n  }\n}];"
       },
       "name": "Log Analytics",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
-      "position": [850, 500]
+      "position": [1050, 500]
     },
     {
       "parameters": {
@@ -96,7 +140,7 @@
       "name": "Send Analytics",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 3,
-      "position": [1050, 500]
+      "position": [1250, 500]
     }
   ],
   "connections": {
@@ -107,11 +151,54 @@
             "node": "Process Input",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Fetch Company Info (Website)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Company Info (File)",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
     },
     "Process Input": {
+      "main": [
+        [
+          {
+            "node": "Merge Company Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Company Info (Website)": {
+      "main": [
+        [
+          {
+            "node": "Merge Company Context",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Read Company Info (File)": {
+      "main": [
+        [
+          {
+            "node": "Merge Company Context",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge Company Context": {
       "main": [
         [
           {
