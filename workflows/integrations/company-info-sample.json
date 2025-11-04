@@ -1,0 +1,53 @@
+{
+  "companyName": "CryptoVision",
+  "industry": "Cryptocurrency & Blockchain",
+  "description": "A leading cryptocurrency platform providing secure trading and wallet services",
+  "products": [
+    "Crypto Trading Platform",
+    "Multi-Currency Wallet",
+    "Market Analysis Tools",
+    "Staking Services",
+    "DeFi Integration"
+  ],
+  "features": [
+    "Secure Trading with 2FA",
+    "24/7 Customer Support",
+    "Low Trading Fees (0.1%)",
+    "Advanced Charting Tools",
+    "Mobile App Available",
+    "Cold Storage Security",
+    "Instant Deposits & Withdrawals"
+  ],
+  "capabilities": [
+    "Answer questions about cryptocurrency trading",
+    "Explain blockchain technology and DeFi",
+    "Provide real-time market insights",
+    "Help with account setup and verification",
+    "Guide users on wallet security best practices",
+    "Explain staking and yield farming",
+    "Assist with deposit and withdrawal processes"
+  ],
+  "website": "https://cryptovision.example.com",
+  "support_email": "support@cryptovision.example.com",
+  "trading_pairs": [
+    "BTC/USD",
+    "ETH/USD",
+    "BTC/ETH",
+    "SOL/USD",
+    "USDT/USD"
+  ],
+  "supported_networks": [
+    "Bitcoin",
+    "Ethereum",
+    "Solana",
+    "Polygon",
+    "Binance Smart Chain"
+  ],
+  "faq": {
+    "minimum_deposit": "$10",
+    "withdrawal_time": "1-24 hours depending on network",
+    "verification_required": "Yes, for deposits over $1000",
+    "available_countries": "150+ countries worldwide",
+    "mobile_app": "Available on iOS and Android"
+  }
+}

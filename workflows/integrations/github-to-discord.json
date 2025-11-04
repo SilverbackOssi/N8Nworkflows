@@ -1,0 +1,64 @@
+{
+  "name": "GitHub to Discord Integration",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "github-webhook",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "name": "GitHub Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "github-webhook"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parse GitHub webhook data\nconst data = $input.first().json;\nconst event = data.action || 'unknown';\nconst repo = data.repository?.full_name || 'Unknown repo';\n\nlet message = '';\n\nif (data.pull_request) {\n  message = `🔀 PR ${event}: ${data.pull_request.title} in ${repo}`;\n} else if (data.issue) {\n  message = `📝 Issue ${event}: ${data.issue.title} in ${repo}`;\n} else if (data.commits) {\n  message = `💾 New commits pushed to ${repo}`;\n} else {\n  message = `📬 ${event} event in ${repo}`;\n}\n\nreturn [{\n  json: {\n    content: message,\n    url: data.pull_request?.html_url || data.issue?.html_url || data.repository?.html_url\n  }\n}];"
+      },
+      "name": "Parse Event",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "content": "= $json.content + '\\n' + $json.url",
+        "webhookUrl": "https://discord.com/api/webhooks/{WEBHOOK_ID}/{WEBHOOK_TOKEN}"
+      },
+      "name": "Send to Discord",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 1,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "GitHub Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Event": {
+      "main": [
+        [
+          {
+            "node": "Send to Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "3"
+}
